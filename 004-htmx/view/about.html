@@ -1,0 +1,13 @@
+{{define "title" -}}
+  Charlie Blog | {{index . "name"}}
+{{- end}}
+
+{{define "body"}}
+<h1>{{index . "msg"}}</h1>
+<h2>This is the about page.</h2>
+
+<button hx-post="/clicked" hx-swap="outerHTML">
+    Click Me
+</button>
+
+{{end}}

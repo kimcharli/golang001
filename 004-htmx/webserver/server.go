@@ -1,19 +1,19 @@
 package webserver
 
 import (
+	"errors"
 	"html/template"
 	"io"
 	"net/http"
 
+	// "github.com/labstack/echo"
 	"github.com/labstack/echo/v4"
+
+	"github.com/kimcharli/go101/handler"
 )
 
-// type Template struct {
-// 	templates *template.Template
-// }
-
 type TemlateRenderer struct {
-	templates *template.Template
+	templates map[string]*template.Template
 }
 
 // func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
@@ -22,36 +22,72 @@ type TemlateRenderer struct {
 
 func (t *TemlateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	// Add global methods if data is a map
-	if viewContext, isMap := data.(map[string]interface{}); isMap {
-		viewContext["reverse"] = c.Echo().Reverse
+	tmpl, ok := t.templates[name]
+	if !ok {
+		err := errors.New("Template not found -> " + name)
+		return err
 	}
+	// if viewContext, isMap := data.(map[string]interface{}); isMap {
+	// 	viewContext["reverse"] = c.Echo().Reverse
+	// }
 
-	return t.templates.ExecuteTemplate(w, name, data)
+	// return t.templates.ExecuteTemplate(w, name, data)
+	return tmpl.ExecuteTemplate(w, "layout.html", data)
 }
+
+// func exampleStringOut(c echo.Context) error {
+// 	return c.String(http.StatusOK, "Hello World!")
+// }
+
+// func exampleRenderOut(c echo.Context) error {
+// 	return c.Render(http.StatusOK, "hello", "W0rld")
+// }
+
+// func exampleJSONOut(c echo.Context) error {
+// 	return c.JSONBlob(
+// 		http.StatusOK,
+// 		[]byte(`{"id": "1", "msg": "Hello, Boatswain!"}`),
+// 	)
+// }
+
+// func exampleHTMLOut(c echo.Context) error {
+// 	return c.HTML(
+// 		http.StatusOK,
+// 		"<h1>Hello, Boatswain!</h1>",
+// 	)
+// }
 
 func Hello(c echo.Context) error {
 	return c.Render(http.StatusOK, "hello", "Worlld")
 }
 
+// func SomeThing(c echo.Context) error {
+
+// }
+
 func WebServer() (e *echo.Echo) {
-	// t := &Template{
-	// 	templates: template.Must(template.ParseGlob("public/views/*.html")),
-	// }
-	renderer := &TemlateRenderer{
-		// templates: template.Must(template.ParseGlob("*.html")),
-		templates: template.Must(template.ParseGlob("public/views/*.html")),
-	}
 
 	e = echo.New()
 
 	// e.Renderer = t
-	e.Renderer = renderer
+	templates := make(map[string]*template.Template)
+	templates["home.html"] = template.Must(template.ParseFiles("view/home.html", "view/layout.html"))
+	templates["about.html"] = template.Must(template.ParseFiles("view/about.html", "view/layout.html"))
+	e.Renderer = &TemlateRenderer{
+		// templates: template.Must(template.ParseGlob("*.html")),
+		// templates: template.Must(template.ParseGlob("view/*.html")),
+		templates: templates,
+	}
 
-	e.GET("/hello", Hello)
-	e.GET("/something", func(c echo.Context) error {
-		return c.Render(http.StatusOK, "template.html", map[string]interface{}{
-			"name": "Dolly",
-		})
-	}).Name = "foobar"
+	// e.GET("/hello", Hello)
+	// e.GET("/something", func(c echo.Context) error {
+	// 	return c.Render(http.StatusOK, "template.html", map[string]interface{}{
+	// 		"name": "Dolly",
+	// 	})
+	// }).Name = "foobar"
+
+	e.GET("/", handler.HomeHander)
+	e.GET("/about", handler.AboutHandler)
+	e.POST("/clicked", handler.ClickedHandler)
 	return e
 }
